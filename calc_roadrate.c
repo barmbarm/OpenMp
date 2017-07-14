@@ -6,13 +6,14 @@
 #include<vector>
 #include<map>
 #include<emmintrin.h>
+#include<math.h>
 
 using namespace std;
 
 struct unit
 {
     string info;
-    string Area;
+    int Area;
     float Value;
 };
 
@@ -61,7 +62,7 @@ int main(int argc,char *argv[])
             break;
         string s = std::to_string(AreaNo) + std::to_string(RoadNo) \
             + std::to_string(VehTypeNo);
-        unit re = {s,std::to_string(AreaNo),Money};
+        unit re = {s,AreaNo,Money};
         Chart2.push_back(re);
         //Count[std::to_string(AreaNo)]++;     
     }
@@ -76,14 +77,15 @@ int main(int argc,char *argv[])
         ary2[i] = Chart2[i].Value/1000;
         //cout<<ary2[i]<<endl;
     }
-
-    __m128 x;
-    __m128 y;
-    __m128 z;
+    
+    clock_t tStart = clock();
     //parallel handle data
-    #pragma omp parallel num_threads(thread_num)
+    #pragma omp parallel num_threads(thread_num) 
     {
-        #pragma omp for
+        __m128 x;
+        __m128 y;
+        __m128 z;
+        #pragma omp for schedule(dynamic)
         for(int i = 0; i<recordNum; i=i+4)
         {
             x = _mm_loadu_ps(ary1+i);
@@ -92,12 +94,14 @@ int main(int argc,char *argv[])
             _mm_storeu_ps(ary2+i,z);
         }
 
-        /*for(int i=0;i<recordNum;i++)
-        {
-            ary2[i] = ary1[i]*ary2[i];
-        }*/
-    }
 
+    }
+    /*
+    for(int i=0;i<recordNum;i++)
+    {
+        ary2[i] = ary1[i]*ary2[i];
+    }*/
+    cout<<"Time Taken : "<<(double) (clock()-tStart)/CLOCKS_PER_SEC<<endl;
     //handle the rest
     for(int i=0;i<(recordNum%4);i++)
     {
@@ -105,8 +109,8 @@ int main(int argc,char *argv[])
     }
 
     //Get sum up
-    map<string, float> count;
-    map<string, float> summary;
+    map<int, float> count;
+    map<int, float> summary;
     float sum=0;
     for(int i=0; i<recordNum; i++)
     {
